@@ -3,24 +3,24 @@ const mongoose = require("mongoose");
 const QuotationSchema = new mongoose.Schema({
   quotationNo: {
     type: String,
-    required: true
+    required: true,
+    unique: true
   },
   billTo: {
-    type: String
+    type: String,
+    required: true
   },
-  items: [
-    {
-      description: String,
-      price: Number
-    }
-  ],
-  totalAmount: {
+  items: {
+    type: Array,
+    default: []
+  },
+  total: {
     type: Number,
     required: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  date: {
+    type: String,
+    default: () => new Date().toLocaleDateString("en-GB")
   }
 });
 
