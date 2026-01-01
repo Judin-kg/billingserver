@@ -4,57 +4,91 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
 
 const DATA_FILE = "./quotations.json";
 
+/* =========================
+   HELPER FUNCTIONS
+========================= */
 const readData = () => {
   if (!fs.existsSync(DATA_FILE)) return [];
-  return JSON.parse(fs.readFileSync(DATA_FILE));
+  return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
 };
 
 const writeData = (data) => {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 };
 
-/* GET */
+/* =========================
+   ROOT ROUTE (FIXES Cannot GET /)
+========================= */
+app.get("/", (req, res) => {
+  res.send("✅ RJ Atlas Digital AI Billing Backend is running");
+});
+
+/* =========================
+   GET ALL QUOTATIONS
+========================= */
 app.get("/api/quotations", (req, res) => {
-  res.json(readData());
+  const quotations = readData();
+  res.json(quotations);
 });
 
-/* POST */
+/* =========================
+   SAVE NEW QUOTATION
+========================= */
 app.post("/api/quotations", (req, res) => {
-  const data = readData();
-  data.push(req.body);
-  writeData(data);
-  res.json({ message: "Quotation saved" });
+  const quotations = readData();
+
+  const newQuotation = {
+    quotationNo: req.body.quotationNo,
+    billTo: req.body.billTo,
+    items: req.body.items || [],
+    total: Number(req.body.total || 0),
+    date: req.body.date
+  };
+
+  quotations.push(newQuotation);
+  writeData(quotations);
+
+  res.status(201).json({ message: "Quotation saved successfully" });
 });
 
-/* DELETE */
-app.delete("/api/quotations/:quotationNo", (req, res) => {
-  const data = readData();
-  const updated = data.filter(
-    q => q.quotationNo !== req.params.quotationNo
-  );
-  writeData(updated);
-  res.json({ message: "Quotation deleted" });
-});
-
-/* UPDATE */
+/* =========================
+   UPDATE QUOTATION
+========================= */
 app.put("/api/quotations/:quotationNo", (req, res) => {
-  const data = readData();
-  const updated = data.map(q =>
+  const quotations = readData();
+
+  const updated = quotations.map((q) =>
     q.quotationNo === req.params.quotationNo
       ? { ...q, ...req.body }
       : q
   );
+
   writeData(updated);
-  res.json({ message: "Quotation updated" });
+  res.json({ message: "Quotation updated successfully" });
 });
 
-app.listen(PORT, () =>
-  console.log(`✅ Backend running on http://localhost:${PORT}`)
-);
+/* =========================
+   DELETE QUOTATION
+========================= */
+app.delete("/api/quotations/:quotationNo", (req, res) => {
+  const quotations = readData().filter(
+    (q) => q.quotationNo !== req.params.quotationNo
+  );
+
+  writeData(quotations);
+  res.json({ message: "Quotation deleted successfully" });
+});
+
+/* =========================
+   START SERVER
+========================= */
+app.listen(PORT, () => {
+  console.log(`✅ Backend running on port ${PORT}`);
+});
